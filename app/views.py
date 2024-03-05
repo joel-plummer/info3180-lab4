@@ -5,6 +5,8 @@ from flask_login import login_user, logout_user, current_user, login_required
 from werkzeug.utils import secure_filename
 from app.models import UserProfile
 from app.forms import LoginForm
+from flask_wtf import *
+from werkzeug.security import check_password_hash
 
 
 ###
@@ -26,7 +28,7 @@ def about():
 @app.route('/upload', methods=['POST', 'GET'])
 def upload():
     # Instantiate your form class
-
+    form = LoginForm()
     # Validate file upload on submit
     if form.validate_on_submit():
         # Get file data and save to your uploads folder
@@ -43,8 +45,10 @@ def login():
 
     # change this to actually validate the entire form submission
     # and not just one field
-    if form.username.data:
+    if form.validate_on_submit():
         # Get the username and password values from the form.
+        username=form.username.data
+        password=form.password.data
 
         # Using your model, query database for a user based on the username
         # and password submitted. Remember you need to compare the password hash.
@@ -52,11 +56,17 @@ def login():
         # Then store the result of that query to a `user` variable so it can be
         # passed to the login_user() method below.
 
-        # Gets user id, load into session
-        login_user(user)
+        user = db.session.execute(db.select(UserProfile).filter_by(username=username)).scalar()
 
+        if user is not None and check_password_hash(user.password, password):  
+            # Gets user id, load into session
+            login_user(user)
+            
         # Remember to flash a message to the user
-        return redirect(url_for("home"))  # The user should be redirected to the upload form instead
+            flash('Logged in successfully.', 'success')
+
+        return redirect(url_for("upload"))  # The user should be redirected to the upload form instead
+    
     return render_template("login.html", form=form)
 
 # user_loader callback. This callback is used to reload the user object from
