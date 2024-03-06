@@ -18,3 +18,14 @@ body {
     border-top-left-radius: 0;
     border-top-right-radius: 0;
 }
+.grid-container {
+    display: grid;
+    grid-template-columns: auto auto auto;
+    padding: 10px;
+
+}
+.img{
+    width: 300px;
+    height: 200px;
+}
+

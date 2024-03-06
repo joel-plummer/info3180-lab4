@@ -1,6 +1,6 @@
 import os
-from app import app, db, login_manager
-from flask import render_template, request, redirect, url_for, flash, session, abort
+from app import app, db, login_manager, get_upload_images
+from flask import render_template, request, redirect, url_for, flash, session, abort, send_from_directory
 from flask_login import login_user, logout_user, current_user, login_required
 from werkzeug.utils import secure_filename
 from app.models import UserProfile
@@ -23,7 +23,7 @@ def home():
 @app.route('/about/')
 def about():
     """Render the website's about page."""
-    return render_template('about.html', name="Mary Jane")
+    return render_template('about.html', name="Joel Plummer")
 
 
 @app.route('/upload', methods=['POST', 'GET'])
@@ -44,7 +44,27 @@ def upload():
     flash_errors(photo)
     return render_template('upload.html', form=photo) # Update this to redirect the user to a route that displays all uploaded image files
 
-   
+
+
+@app.route('/uploads/<filename>')
+def get_image(filename):
+    rootdir = os.getcwd()
+    return send_from_directory(os.path.join(os.getcwd(), app.config['UPLOAD_FOLDER']), filename)
+
+def get_uploaded_images():
+    rootdir = os.getcwd()
+    lst = []
+    for subdir, dirs, files in os.walk(rootdir + '/app/static/uploads'):
+        for file in files:
+            lst.append(os.path.join(subdir, file).split("\\")[-1])
+    return lst[1:]
+
+@app.route('/files')
+@login_required
+def files():
+    images = get_upload_images()
+    return render_template('files.html', images=images)
+
 @app.route('/login', methods=['POST', 'GET'])
 def login():
     form = LoginForm()
@@ -81,8 +101,13 @@ def login():
     
     return render_template("login.html", form=form)
 
-# user_loader callback. This callback is used to reload the user object from
-# the user ID stored in the session
+@app.route('/logout')
+def logout():
+    logout_user()
+    flash('You have been logged out.', 'success')
+    return redirect(url_for('home'))
+
+
 @login_manager.user_loader
 def load_user(id):
     login_manager.login_view = 'login'
